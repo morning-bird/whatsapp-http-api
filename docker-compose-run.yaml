@@ -1,11 +1,13 @@
 version: '3'
 services:
   whatsapp-http-api:
-    image: renato92/whatsapp-http-api:latest
+    image: renato92/whatsapp-http-api:${TAG}
     container_name: whatsapp-http-api
     build: .
     ports:
       - '3000:3000/tcp'
+    volumes:
+      - session_data:/app/.wwebjs_auth
     environment:
       # Environment variables from https://waha.devlike.pro/docs/how-to/config/
       - WHATSAPP_HOOK_URL=https://httpbin.org/post
@@ -14,4 +16,4 @@ services:
     restart: always
 
 volumes:
-  mongodb_data: {}
+  session_data: {}
