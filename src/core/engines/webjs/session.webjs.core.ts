@@ -269,19 +269,7 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
 
   async sendPoll(request: MessagePollRequest) {
     const requestPoll = request.poll;
-    const poll: Poll = {
-      pollName: requestPoll.name,
-      pollOptions: requestPoll.options.map((name, i) => {
-        return {
-          name: name,
-          localId: i
-        }
-      }),
-      options: {
-        messageSecret: null,
-        allowMultipleAnswers: false
-      }
-    }
+    const poll = new Poll(requestPoll.name, requestPoll.options);
     const result = await this.whatsapp.sendMessage(this.ensureSuffix(request.chatId), poll);
     return this.toWAMessage(result);
   }
