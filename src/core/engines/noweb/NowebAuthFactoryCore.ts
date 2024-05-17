@@ -1,4 +1,4 @@
-import { useMultiFileAuthState } from '@adiwajshing/baileys';
+import { useMultiFileAuthState } from '@whiskeysockets/baileys'
 import { Store } from 'whatsapp-web.js';
 
 import { DataStore } from '../../abc/DataStore';

@@ -233,9 +233,7 @@ export abstract class WhatsappSession {
     throw new NotImplementedByEngineError();
   }
 
-  sendPoll(request: MessagePollRequest) {
-    throw new NotImplementedByEngineError();
-  }
+  abstract sendPoll(request: MessagePollRequest);
 
   abstract sendLocation(request: MessageLocationRequest);
 

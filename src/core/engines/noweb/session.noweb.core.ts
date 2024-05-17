@@ -1,3 +1,4 @@
+import { UnprocessableEntityException } from '@nestjs/common';
 import makeWASocket, {
   Browsers,
   DisconnectReason,
@@ -12,8 +13,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   WAMessageContent,
   WAMessageKey,
-} from '@adiwajshing/baileys';
-import { UnprocessableEntityException } from '@nestjs/common';
+} from '@whiskeysockets/baileys';
 import * as Buffer from 'buffer';
 import { request } from 'express';
 import * as fs from 'fs/promises';
@@ -944,7 +944,7 @@ export class WhatsappSessionNoWebCore extends WhatsappSession {
 }
 
 export class EngineMediaProcessor implements IEngineMediaProcessor<any> {
-  constructor(public session: WhatsappSessionNoWebCore) {}
+  constructor(public session: WhatsappSessionNoWebCore) { }
 
   hasMedia(message: any): boolean {
     const messageType = Object.keys(message.message)[0];

@@ -10,6 +10,7 @@ import {
   MessageImageRequest,
   MessageLinkPreviewRequest,
   MessageLocationRequest,
+  MessagePollRequest,
   MessageReactionRequest,
   MessageReplyRequest,
   MessageTextRequest,
@@ -27,6 +28,10 @@ import { NotImplementedByEngineError } from '../../exceptions';
 import { QR } from '../../QR';
 
 export class WhatsappSessionVenomCore extends WhatsappSession {
+  sendPoll(request: MessagePollRequest) {
+    throw new Error('Method not implemented.');
+  }
+
   engine = WAHAEngine.VENOM;
 
   whatsapp: Whatsapp;
@@ -282,12 +287,16 @@ export class WhatsappSessionVenomCore extends WhatsappSession {
 }
 
 export class EngineMediaProcessor implements IEngineMediaProcessor<Message> {
-  constructor(public session: WhatsappSessionVenomCore) {}
+  constructor(public session: WhatsappSessionVenomCore) { }
 
   hasMedia(message: any): boolean {
     if (!message.isMMS || !message.isMedia) {
       return message;
     }
+  }
+
+  sendPoll(request: MessagePollRequest) {
+    throw new NotImplementedByEngineError();
   }
 
   getMessageId(message: any): string {

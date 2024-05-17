@@ -8,6 +8,8 @@ import {
   GroupChat,
   Location,
   Message,
+  MessageSendOptions,
+  Poll,
   Reaction,
 } from 'whatsapp-web.js';
 import { Message as MessageInstance } from 'whatsapp-web.js/src/structures';
@@ -20,6 +22,7 @@ import {
   MessageFileRequest,
   MessageImageRequest,
   MessageLocationRequest,
+  MessagePollRequest,
   MessageReactionRequest,
   MessageReplyRequest,
   MessageStarRequest,
@@ -248,9 +251,9 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
   }
 
   sendText(request: MessageTextRequest) {
-    const options = {
+    const options: MessageSendOptions = {
       // It's fine to sent just ids instead of Contact object
-      mentions: request.mentions as unknown as string[],
+      // mentions: request.mentions as unknown as string[],
     };
     return this.whatsapp.sendMessage(
       this.ensureSuffix(request.chatId),
@@ -262,6 +265,25 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
   public deleteMessage(chatId: string, messageId: string) {
     const message = this.recreateMessage(messageId);
     return message.delete(true);
+  }
+
+  async sendPoll(request: MessagePollRequest) {
+    const requestPoll = request.poll;
+    const poll: Poll = {
+      pollName: requestPoll.name,
+      pollOptions: requestPoll.options.map((name, i) => {
+        return {
+          name: name,
+          localId: i
+        }
+      }),
+      options: {
+        messageSecret: null,
+        allowMultipleAnswers: false
+      }
+    }
+    const result = await this.whatsapp.sendMessage(this.ensureSuffix(request.chatId), poll);
+    return this.toWAMessage(result);
   }
 
   public editMessage(
@@ -281,7 +303,7 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
     const options = {
       quotedMessageId: request.reply_to,
       // It's fine to sent just ids instead of Contact object
-      mentions: request.mentions as unknown as string[],
+      // mentions: request.mentions as unknown as string[],
     };
     return this.whatsapp.sendMessage(request.chatId, request.text, options);
   }
