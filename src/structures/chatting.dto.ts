@@ -50,7 +50,7 @@ export class GetMessageQuery extends ChatQuery {
   downloadMedia: true;
 }
 
-export class GetPresenceQuery extends ChatQuery {}
+export class GetPresenceQuery extends ChatQuery { }
 
 /**
  * Requests
@@ -229,6 +229,10 @@ export class MessageStarRequest extends MessageRequest {
   chatId: string;
 
   star: boolean;
+}
+
+export class MessagePinRequest extends MessageRequest {
+  duration: number;
 }
 
 export class WANumberExistResult {

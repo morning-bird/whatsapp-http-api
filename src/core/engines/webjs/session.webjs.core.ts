@@ -457,6 +457,14 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
     };
   }
 
+  public async pinChat(id) {
+    return this.whatsapp.pinChat(id);
+  }
+
+  public async unpinChat(id) {
+    return this.whatsapp.unpinChat(id);
+  }
+
   public async setInfoAdminsOnly(id, value) {
     const groupChat = (await this.whatsapp.getChatById(id)) as GroupChat;
     return groupChat.setInfoAdminsOnly(value);

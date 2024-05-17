@@ -28,6 +28,12 @@ import { NotImplementedByEngineError } from '../../exceptions';
 import { QR } from '../../QR';
 
 export class WhatsappSessionVenomCore extends WhatsappSession {
+  pinChat(chatId: string) {
+    throw new Error('Method not implemented.');
+  }
+  unpinChat(chatId: string) {
+    throw new Error('Method not implemented.');
+  }
   sendPoll(request: MessagePollRequest) {
     throw new Error('Method not implemented.');
   }
@@ -293,10 +299,6 @@ export class EngineMediaProcessor implements IEngineMediaProcessor<Message> {
     if (!message.isMMS || !message.isMedia) {
       return message;
     }
-  }
-
-  sendPoll(request: MessagePollRequest) {
-    throw new NotImplementedByEngineError();
   }
 
   getMessageId(message: any): string {

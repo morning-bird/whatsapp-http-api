@@ -235,6 +235,10 @@ export abstract class WhatsappSession {
 
   abstract sendPoll(request: MessagePollRequest);
 
+  abstract pinChat(chatId: string);
+
+  abstract unpinChat(chatId: string);
+
   abstract sendLocation(request: MessageLocationRequest);
 
   sendLinkPreview(request: MessageLinkPreviewRequest) {

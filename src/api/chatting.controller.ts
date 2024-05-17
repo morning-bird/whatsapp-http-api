@@ -28,7 +28,7 @@ import { WAMessage } from '../structures/responses.dto';
 @Controller('api')
 @ApiTags('chatting')
 export class ChattingController {
-  constructor(private manager: SessionManager) {}
+  constructor(private manager: SessionManager) { }
 
   @Get('/checkNumberStatus')
   @ApiOperation({ summary: 'Check number status' })

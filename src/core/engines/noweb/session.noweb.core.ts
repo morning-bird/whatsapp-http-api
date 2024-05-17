@@ -110,6 +110,12 @@ const PresenceStatuses = {
 const ToEnginePresenceStatus = flipObject(PresenceStatuses);
 
 export class WhatsappSessionNoWebCore extends WhatsappSession {
+  pinChat(chatId: string) {
+    throw new Error('Method not implemented.');
+  }
+  unpinChat(chatId: string) {
+    throw new Error('Method not implemented.');
+  }
   engine = WAHAEngine.NOWEB;
   authFactory = new NowebAuthFactoryCore();
   private restartTimeoutId: null | ReturnType<typeof setTimeout> = null;

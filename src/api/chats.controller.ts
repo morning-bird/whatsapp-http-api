@@ -26,7 +26,7 @@ import {
 @Controller('api/:session/chats')
 @ApiTags('chats')
 class ChatsController {
-  constructor(private manager: SessionManager) {}
+  constructor(private manager: SessionManager) { }
 
   @Get('')
   @SessionApiParam
@@ -43,6 +43,26 @@ class ChatsController {
     @Param('chatId') chatId: string,
   ) {
     return session.deleteChat(chatId);
+  }
+
+  @Post(':chatId/pin')
+  @SessionApiParam
+  @ApiOperation({ summary: 'Pin the chat' })
+  pinChat(
+    @SessionParam session: WhatsappSession,
+    @Param('chatId') chatId: string,
+  ) {
+    return session.pinChat(chatId);
+  }
+
+  @Post(':chatId/unpin')
+  @SessionApiParam
+  @ApiOperation({ summary: 'Unpin the chat' })
+  unpinChat(
+    @SessionParam session: WhatsappSession,
+    @Param('chatId') chatId: string,
+  ) {
+    return session.unpinChat(chatId);
   }
 
   @Get(':chatId/messages')
