@@ -1,6 +1,7 @@
 version: '3'
 services:
   whatsapp-http-api:
+    image: renato92/whatsapp-http-api:with-polling
     container_name: whatsapp-http-api
     build: .
     ports:

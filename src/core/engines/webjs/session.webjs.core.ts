@@ -10,6 +10,7 @@ import {
   Message,
   MessageSendOptions,
   Poll,
+  PollVote,
   Reaction,
 } from 'whatsapp-web.js';
 import { Message as MessageInstance } from 'whatsapp-web.js/src/structures';
@@ -620,6 +621,11 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
       case WAHAEvents.STATE_CHANGE:
         this.whatsapp.on(Events.STATE_CHANGED, handler);
         return true;
+      case WAHAEvents.POLL_VOTE:
+        this.whatsapp.on("vote_update", (vote: PollVote) => {
+          handler(this.processPollVoter(vote))
+        });
+        return true;
       case WAHAEvents.MESSAGE_ACK:
         // We do not download media here
         this.whatsapp.on(Events.MESSAGE_ACK, (message) =>
@@ -647,6 +653,15 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
       }
     }
     return await this.toWAMessage(message);
+  }
+
+  private processPollVoter(vote: PollVote) {
+    return {
+      interractedAtTs: vote.interractedAtTs,
+      parentMessage: vote.parentMessage,
+      selectedOptions: vote.selectedOptions,
+      voter: vote.voter
+    }
   }
 
   private processMessageReaction(reaction: Reaction): WAMessageReaction {
