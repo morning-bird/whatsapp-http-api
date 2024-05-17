@@ -6,6 +6,7 @@ import {
   Contact,
   Events,
   GroupChat,
+  LocalAuth,
   Location,
   Message,
   MessageSendOptions,
@@ -92,6 +93,7 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
         path: path,
         strict: true,
       },
+      authStrategy: new LocalAuth()
     };
   }
 
