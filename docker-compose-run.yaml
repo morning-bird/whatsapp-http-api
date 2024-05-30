@@ -10,7 +10,7 @@ services:
       - session_data:/app/.wwebjs_auth
     environment:
       # Environment variables from https://waha.devlike.pro/docs/how-to/config/
-      - WHATSAPP_HOOK_URL=https://httpbin.org/post
+      - WHATSAPP_HOOK_URL=https://gms.church
       - WHATSAPP_HOOK_EVENTS=message
       - WHATSAPP_DEFAULT_ENGINE=WEBJS
     restart: always

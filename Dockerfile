@@ -13,7 +13,8 @@ RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 WORKDIR /src
 COPY package.json .
 COPY yarn.lock .
-RUN yarn set version 3.6.3
+RUN corepack enable
+RUN yarn set version 4.2.2
 RUN --mount=type=ssh yarn install
 
 # App

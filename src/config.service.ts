@@ -11,7 +11,7 @@ export class WhatsappConfigService {
   public filesUri = '/api/files';
   public schema = 'http';
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   get filesURL(): string {
     return `${this.schema}://${this.hostname}:${this.port}${this.filesUri}/`;
@@ -67,7 +67,7 @@ export class WhatsappConfigService {
 
   get proxyServer(): string[] | string | undefined {
     const single = this.configService.get('WHATSAPP_PROXY_SERVER', undefined);
-    const multipleValues = this.configService.get(
+    const multipleValues: any = this.configService.get(
       'WHATSAPP_PROXY_SERVER_LIST',
       undefined,
     );
@@ -145,7 +145,7 @@ export class WhatsappConfigService {
     if (!user || !password) {
       console.log(
         'Please set up both WAHA_DASHBOARD_USERNAME and WAHA_DASHBOARD_PASSWORD ' +
-          'to enable swagger authentication.',
+        'to enable swagger authentication.',
       );
       return null;
     }

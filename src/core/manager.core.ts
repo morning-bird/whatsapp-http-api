@@ -20,8 +20,6 @@ import {
 import { WebhookConfig } from '../structures/webhooks.config.dto';
 import { SessionManager } from './abc/manager.abc';
 import { SessionParams, WhatsappSession } from './abc/session.abc';
-import { WhatsappSessionNoWebCore } from './engines/noweb/session.noweb.core';
-import { WhatsappSessionVenomCore } from './engines/venom/session.venom.core';
 import { WhatsappSessionWebJSCore } from './engines/webjs/session.webjs.core';
 import { DOCS_URL } from './exceptions';
 import { getProxyConfig } from './helpers.proxy';
@@ -79,9 +77,9 @@ export class SessionManagerCore extends SessionManager {
     if (engine === WAHAEngine.WEBJS) {
       return WhatsappSessionWebJSCore;
     } else if (engine === WAHAEngine.VENOM) {
-      return WhatsappSessionVenomCore;
+      throw new NotFoundException(`Support removed.`);
     } else if (engine === WAHAEngine.NOWEB) {
-      return WhatsappSessionNoWebCore;
+      throw new NotFoundException(`Support removed.`);
     } else {
       throw new NotFoundException(`Unknown whatsapp engine '${engine}'.`);
     }
