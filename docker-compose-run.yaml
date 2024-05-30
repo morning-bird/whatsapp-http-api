@@ -3,7 +3,9 @@ services:
   whatsapp-http-api:
     image: renato92/whatsapp-http-api:${TAG}
     container_name: whatsapp-http-api
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.withchromium
     ports:
       - '3000:3000/tcp'
     volumes:

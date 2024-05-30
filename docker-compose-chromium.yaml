@@ -1,0 +1,8 @@
+version: '3'
+services:
+  node20:
+    image: renato92/node20:${TAG}
+    build:
+      context: .
+      dockerfile: Dockerfile.chromium
+    restart: always

@@ -54,7 +54,7 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^4.6.3",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main"
+    "whatsapp-web.js": "https://github.com/pedroslopez/whatsapp-web.js.git#commit=41b280c769918db03ac6ec12cf0e4215e7b864ef"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",

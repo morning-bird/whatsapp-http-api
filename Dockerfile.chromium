@@ -1,35 +1,10 @@
-#
-# Build
-#
-# FROM node:20-bullseye as build
 FROM node:20-bullseye
-ENV PUPPETEER_SKIP_DOWNLOAD=True
 
 # npm packages
 RUN apt-get update \
     && apt-get install -y openssh-client
 RUN apt install openssh-client
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-WORKDIR /src
-COPY package.json .
-COPY yarn.lock .
-RUN corepack enable
-RUN yarn set version 4.2.2
-RUN --mount=type=ssh yarn install
-
-# App
-# WORKDIR /src
-ADD . /src
-# RUN --mount=type=ssh yarn install
-# RUN yarn build && find ./dist -name "*.d.ts" -delete
-RUN yarn build
-
-#
-# Final
-#
-# FROM node:20-bullseye as release
-ENV PUPPETEER_SKIP_DOWNLOAD=True
 ARG USE_BROWSER=chromium
 
 RUN echo "USE_BROWSER=$USE_BROWSER"
@@ -63,15 +38,3 @@ RUN if [ "$USE_BROWSER" = "chrome" ]; then \
         && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# Attach sources, install packages
-# WORKDIR /app
-# COPY package.json ./
-# COPY yarn.lock ./
-# RUN corepack enable
-# RUN yarn set version 4.2.2
-# COPY --from=build /src/node_modules ./node_modules
-# COPY --from=build /src/dist ./dist
-
-# Run command, etc
-EXPOSE 3000
-CMD yarn start:prod

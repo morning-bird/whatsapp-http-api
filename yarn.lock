@@ -10914,11 +10914,11 @@ __metadata:
     ts-node: "npm:^10.9.2"
     tsconfig-paths: "npm:^4.2.0"
     typescript: "npm:^4.9.5"
-    whatsapp-web.js: "github:pedroslopez/whatsapp-web.js#main"
+    whatsapp-web.js: "https://github.com/pedroslopez/whatsapp-web.js.git#commit=41b280c769918db03ac6ec12cf0e4215e7b864ef"
   languageName: unknown
   linkType: soft
 
-"whatsapp-web.js@github:pedroslopez/whatsapp-web.js#main":
+"whatsapp-web.js@https://github.com/pedroslopez/whatsapp-web.js.git#commit=41b280c769918db03ac6ec12cf0e4215e7b864ef":
   version: 1.23.1-alpha.6
   resolution: "whatsapp-web.js@https://github.com/pedroslopez/whatsapp-web.js.git#commit=41b280c769918db03ac6ec12cf0e4215e7b864ef"
   dependencies:

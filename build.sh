@@ -1,4 +1,6 @@
 #/usr/bin/bash
 
-export TAG=latest
-docker compose -f docker-compose-run.yaml build && docker compose -f docker-compose-run.yaml push
+export TAG=lite-0.6
+docker compose -f docker-compose-run.yaml build
+docker compose -f docker-compose-run.yaml push
+# docker compose -f docker-compose-run.yaml up

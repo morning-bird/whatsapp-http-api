@@ -1,0 +1,32 @@
+#
+# Build
+#
+# FROM node:20-bullseye as build
+FROM renato92/node20
+ENV PUPPETEER_SKIP_DOWNLOAD=True
+
+WORKDIR /src
+COPY . .
+# COPY package.json .
+# COPY yarn.lock .
+RUN corepack enable
+RUN yarn set version 4.2.2
+RUN --mount=type=ssh yarn install
+# ADD . /src
+# RUN --mount=type=ssh yarn install
+# RUN yarn build && find ./dist -name "*.d.ts" -delete
+RUN yarn build
+
+
+# Attach sources, install packages
+# WORKDIR /app
+# COPY package.json ./
+# COPY yarn.lock ./
+# RUN corepack enable
+# RUN yarn set version 4.2.2
+# COPY --from=build /src/node_modules ./node_modules
+# COPY --from=build /src/dist ./dist
+
+# Run command, etc
+EXPOSE 3000
+CMD yarn start:prod
