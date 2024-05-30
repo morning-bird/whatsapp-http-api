@@ -74,7 +74,7 @@ class ChatsController {
     @Param('chatId') chatId: string,
   ) {
     const downloadMedia = parseBool(query.downloadMedia);
-    return session.getChatMessages(chatId, query.limit, downloadMedia);
+    return session.getChatMessages(chatId, query.limit, downloadMedia, query.fromMe, query.messageId);
   }
 
   @Delete(':chatId/messages')

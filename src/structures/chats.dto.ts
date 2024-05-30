@@ -8,6 +8,8 @@ import { SessionBaseRequest, SessionQuery } from './base.dto';
 
 export class GetChatMessagesQuery extends SessionQuery {
   limit: number = 100;
+  fromMe?: boolean;
+  messageId?: string;
   @ApiProperty({
     example: true,
     required: false,

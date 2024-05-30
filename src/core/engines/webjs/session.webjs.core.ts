@@ -334,7 +334,7 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
   }
 
   async getMessages(query: GetMessageQuery) {
-    return this.getChatMessages(query.chatId, query.limit, query.downloadMedia);
+    return this.getChatMessages(query.chatId, query.limit, query.downloadMedia, query.fromMe, query.messageId);
   }
 
   async setReaction(request: MessageReactionRequest) {
@@ -369,13 +369,19 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
     return this.whatsapp.getChats();
   }
 
-  async getChatMessages(chatId: string, limit: number, downloadMedia: boolean) {
+  async getChatMessages(chatId: string, limit: number, downloadMedia: boolean, fromMe?: boolean, messageId?: string) {
     const chat: Chat = await this.whatsapp.getChatById(
       this.ensureSuffix(chatId),
     );
-    const messages = await chat.fetchMessages({
+    const searchPayload: any = {
       limit: limit,
-    });
+      fromMe: fromMe
+    }
+    let messages = await chat.fetchMessages(searchPayload);
+    // filter if needed
+    if (messageId !== undefined) {
+      messages = messages.filter((message) => message.id.id === messageId);
+    }
     // Go over messages, download media, and convert to right format.
     const result = [];
     for (const message of messages) {

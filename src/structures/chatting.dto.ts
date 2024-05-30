@@ -4,7 +4,7 @@ import {
   ApiProperty,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsString } from 'class-validator';
 
 import { SessionBaseRequest, SessionQuery } from './base.dto';
 import {
@@ -41,6 +41,10 @@ export class ChatQuery extends SessionQuery {
 export class GetMessageQuery extends ChatQuery {
   @IsNumber()
   limit: number;
+  @IsBoolean()
+  fromMe?: boolean;
+  @IsString()
+  messageId?: string;
 
   @ApiProperty({
     example: true,

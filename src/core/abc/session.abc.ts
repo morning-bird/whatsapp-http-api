@@ -288,6 +288,8 @@ export abstract class WhatsappSession {
     chatId: string,
     limit: number,
     downloadMedia: boolean,
+    fromMe?: boolean,
+    messageId?: string,
   ) {
     throw new NotImplementedByEngineError();
   }
