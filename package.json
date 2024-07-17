@@ -54,7 +54,7 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^4.6.3",
-    "whatsapp-web.js": "^1.24.0"
+    "whatsapp-web.js": "https://github.com/pedroslopez/whatsapp-web.js#auto-wa-web-update/patch"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
