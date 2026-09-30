@@ -1165,6 +1165,11 @@ export class WhatsappSessionGoWSCore extends WhatsappSession {
 
   @Activity()
   async sendPoll(request: MessagePollRequest) {
+    if (request.poll.endTime != null) {
+      throw new NotImplementedByEngineError(
+        'Poll end times are only available with the WEBJS engine.',
+      );
+    }
     const jid = await this.hooks.wid.chat.promise(request.chatId, 'sendPoll');
     const message = new messages.MessageRequest({
       id: request.id,

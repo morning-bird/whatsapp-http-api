@@ -14270,7 +14270,7 @@ __metadata:
     undici: "npm:^7.16.0"
     uniqid: "npm:^5.4.0"
     user-agents: "npm:^1.1.669"
-    whatsapp-web.js: "github:devlikeapro/whatsapp-web.js#fork-main-2026-06-26"
+    whatsapp-web.js: "github:wwebjs/whatsapp-web.js#commit=064a3d5a5a3dce1281a6a12740b5a7051339d154"
     write-file-atomic: "npm:^6.0.0"
     yaml: "npm:^2.7.1"
     zod: "npm:^4.3.6"
@@ -14379,9 +14379,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"whatsapp-web.js@github:devlikeapro/whatsapp-web.js#fork-main-2026-06-26":
+"whatsapp-web.js@github:wwebjs/whatsapp-web.js#commit=064a3d5a5a3dce1281a6a12740b5a7051339d154":
   version: 1.34.7
-  resolution: "whatsapp-web.js@https://github.com/devlikeapro/whatsapp-web.js.git#commit=481db6c749f9ca1a2afad34f520769eace9d8f29"
+  resolution: "whatsapp-web.js@https://github.com/wwebjs/whatsapp-web.js.git#commit=064a3d5a5a3dce1281a6a12740b5a7051339d154"
   dependencies:
     archiver: "npm:7.0.1"
     fluent-ffmpeg: "npm:2.1.3"
@@ -14389,7 +14389,7 @@ __metadata:
     mime: "npm:3.0.0"
     node-fetch: "npm:2.7.0"
     node-webpmux: "npm:3.2.1"
-    puppeteer: "npm:25.10.0"
+    puppeteer: "npm:24.38.0"
     unzipper: "npm:0.12.3"
   dependenciesMeta:
     archiver:
@@ -14398,7 +14398,7 @@ __metadata:
       optional: true
     unzipper:
       optional: true
-  checksum: 10/917a28428c55aeaf548b726c4afe1a56100cddac5facc4d9306123a06f34f62f36df19094350bd7623668f5065fa891e81c29c8b7615369f773657bb00fa463a
+  checksum: 10/1792cf5ef8b9dbe66356cf8e340bea82f0d83c30ff842050403f46956fa88f6e7aa57c171d1fb3f742354f09d5a786cc613ad5d25f16a4eeb4ae7b3c33e818ff
   languageName: node
   linkType: hard
 

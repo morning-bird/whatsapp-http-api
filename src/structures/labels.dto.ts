@@ -111,10 +111,16 @@ export class Label {
   colorHex: string;
 
   static toHex(color: number) {
-    if (color >= Colors.length) {
+    if (color < 0 || color >= Colors.length) {
       return '#000000';
     }
     return Colors[color];
+  }
+
+  static fromHex(colorHex: string): number {
+    return Colors.findIndex(
+      (color) => color.toLowerCase() === colorHex?.toLowerCase(),
+    );
   }
 }
 

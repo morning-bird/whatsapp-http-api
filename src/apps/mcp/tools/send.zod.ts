@@ -9,6 +9,7 @@ import {
   MessageImageRequest,
   MessageLinkCustomPreviewRequest,
   MessageLocationRequest,
+  MessagePoll,
   MessagePollRequest,
   MessagePollVoteRequest,
   MessageReactionRequest,
@@ -35,7 +36,17 @@ export const SendLinkCustomPreviewInput = DtoToZod(
 export const SendButtonsInput = DtoToZod(SendButtonsRequest);
 export const SendListInput = DtoToZod(SendListRequest);
 export const SendSeenInput = DtoToZod(SendSeenRequest);
-export const SendPollInput = DtoToZod(MessagePollRequest);
+export const SendPollInput = DtoToZod(MessagePollRequest).extend({
+  poll: DtoToZod(MessagePoll).extend({
+    endTime: z
+      .number()
+      .int()
+      .positive()
+      .max(Number.MAX_SAFE_INTEGER)
+      .optional()
+      .describe('Poll end time (Unix timestamp in milliseconds; WEBJS only)'),
+  }),
+});
 export const SendPollVoteInput = DtoToZod(MessagePollVoteRequest);
 export const SendLocationInput = DtoToZod(MessageLocationRequest);
 export const SendContactVcardInput = DtoToZod(MessageContactVcardRequest);

@@ -39,6 +39,12 @@ export interface WebjsChannelMessage {
   viewCount: number;
 }
 
+export const WebjsExtraEvents = {
+  TAG_RECEIPT: 'tag:receipt',
+  REACHOUT_TIMELOCK_UPDATE: 'reachout_timelock_update',
+  MESSAGE_CAPPING_UPDATE: 'message_capping_update',
+} as const;
+
 class ChannelMessageReaction {
   reaction: string;
   count: number;
@@ -98,6 +104,11 @@ export class WebjsClientCore extends Client {
   public events = new EventEmitter();
   private wpage: WPage = null;
   private injecting: Promise<void> = null;
+  private accountStateInterval: ReturnType<typeof setInterval> = null;
+  private accountStatePage: Page = null;
+  private accountStateNotify: (() => Promise<void>) | null = null;
+  private lastReachoutTimelock: string = null;
+  private lastMessageCapping: string = null;
 
   constructor(
     options,
@@ -109,14 +120,20 @@ export class WebjsClientCore extends Client {
     // AUTHENTICATED and READY fire back to back - run one injection for both
     this.on(Events.AUTHENTICATED, () => this.injectUtils());
     this.on(Events.READY, () => this.injectUtils());
+    this.on(Events.READY, () => this.watchAccountState());
+    this.on(Events.READY, () => this.refreshClientLid());
   }
 
   private injectUtils(): Promise<void> {
     if (this.injecting) {
       return this.injecting;
     }
-    this.injecting = this.attachCustomEventListeners()
+    this.injecting = this.pupPage
+      .waitForFunction('typeof window.WWebJS !== "undefined"', {
+        timeout: 30_000,
+      })
       .then(() => this.injectWaha())
+      .then(() => this.attachCustomEventListeners())
       .catch((err) => this.logger.error(err, 'Failed to inject utils'))
       .finally(() => {
         this.injecting = null;
@@ -137,6 +154,30 @@ export class WebjsClientCore extends Client {
   }
 
   async injectWaha() {
+    await this.pupPage.evaluate(() => {
+      const wweb = (window as any).WWebJS;
+      wweb.GetSerialized = (id) => {
+        if (id == null || typeof id === 'string') return id;
+        if (id._serialized) return id._serialized;
+        if (id.$1) return id.$1;
+        let serialized = null;
+        if (id.remote != null && id.id != null) {
+          const remote = wweb.GetSerialized(id.remote);
+          const participant = wweb.GetSerialized(id.participant);
+          serialized =
+            `${id.fromMe ? 'true' : 'false'}_${remote}_${id.id}` +
+            (id.self ? `_${id.self}` : '') +
+            (participant ? `_${participant}` : '');
+        } else if (id.user != null && id.server != null) {
+          serialized =
+            id.user === 'call'
+              ? 'call'
+              : `${id.user}${id.device ? `:${id.device}` : ''}@${id.server}`;
+        }
+        if (serialized) id._serialized = serialized;
+        return serialized;
+      };
+    });
     await this.pupPage.evaluate(LoadLodash);
     await this.pupPage.evaluate(LoadPaginator);
   }
@@ -198,9 +239,18 @@ export class WebjsClientCore extends Client {
       'onNewMessageId',
       (messageId: string) => {
         this.events.emit('message.id', { id: messageId });
-        return;
       },
     );
+    await exposeFunctionIfAbsent(
+      this.pupPage,
+      'onWahaAccountStateChange',
+      () => void this.accountStateNotify?.(),
+    );
+    if (this.tags) {
+      await exposeFunctionIfAbsent(this.pupPage, 'onTag', (data) => {
+        this.emit(`tag:${data.tag}`, data);
+      });
+    }
     await exposeFunctionIfAbsent(
       this.pupPage,
       'onPresenceUpdate',
@@ -209,6 +259,61 @@ export class WebjsClientCore extends Client {
         return;
       },
     );
+    await this.pupPage.evaluate(() => {
+      const wweb = (window as any).WWebJS;
+      if (!wweb.wahaMessageIdListenerAttached) {
+        let state = (window as any).wahaMessageIdState;
+        if (!state) {
+          try {
+            const msgKey = window.require('WAWebMsgKey');
+            state = { apiSends: 0 };
+            const newId = msgKey.newId;
+            msgKey.newId = async function (...args) {
+              const id = await newId.apply(this, args);
+              if (state.apiSends > 0) {
+                try {
+                  await (window as any).onNewMessageId(id);
+                } catch {
+                  // Reporting the ID must not prevent the message from sending.
+                }
+              }
+              return id;
+            };
+            (window as any).wahaMessageIdState = state;
+          } catch {
+            // Fall back to the sendMessage result if the module is unavailable.
+            return;
+          }
+        }
+        const sendMessage = wweb.sendMessage;
+        wweb.sendMessage = async function (...args) {
+          state.apiSends++;
+          try {
+            return await sendMessage.apply(this, args);
+          } finally {
+            state.apiSends--;
+          }
+        };
+        wweb.wahaMessageIdListenerAttached = true;
+      }
+    });
+    await this.pupPage.evaluate(() => {
+      if ((window as any).wahaAccountStateCmdSubscribed) return;
+      try {
+        const cmd = window.require('WAWebCmd').Cmd;
+        cmd.on(
+          'reachout_timelock_state_change',
+          (window as any).onWahaAccountStateChange,
+        );
+        cmd.on(
+          'new_chat_message_capping_state_change',
+          (window as any).onWahaAccountStateChange,
+        );
+        (window as any).wahaAccountStateCmdSubscribed = true;
+      } catch {
+        // Polling below covers builds that do not load the Cmd module.
+      }
+    });
     await this.attachPresenceEvents();
     if (this.tags) {
       await this.attachTagsEvents();
@@ -330,6 +435,12 @@ export class WebjsClientCore extends Client {
   }
 
   async destroy() {
+    if (this.accountStateInterval) {
+      clearInterval(this.accountStateInterval);
+      this.accountStateInterval = null;
+    }
+    this.accountStatePage = null;
+    this.accountStateNotify = null;
     this.events.removeAllListeners();
     this.wpage?.removeAllListeners();
     await super.destroy();
@@ -354,6 +465,133 @@ export class WebjsClientCore extends Client {
         await Socket.logout();
       }
     });
+  }
+
+  async sendMessage(chatId: string, content: any, options: any = {}) {
+    const message = await super.sendMessage(chatId, content, options);
+    if (message?.id?.id) {
+      // Also cover messages sent before the page listener was attached.
+      this.events.emit('message.id', { id: message.id.id });
+    }
+    return message;
+  }
+
+  private async refreshClientLid() {
+    try {
+      const lid = await this.pupPage.evaluate(() =>
+        window.require('WAWebUserPrefsMeUser').getMaybeMeLidUser(),
+      );
+      if (this.info) {
+        (this.info as typeof this.info & { lid?: string }).lid = lid;
+      }
+    } catch (error) {
+      this.logger.debug({ error: error }, 'Unable to load WEBJS account LID');
+    }
+  }
+
+  async fetchReachoutTimelock(): Promise<any> {
+    return this.pupPage.evaluate(async () => {
+      try {
+        await window
+          .require('WAWebGetReachoutTimelockJob')
+          .fetchReachoutTimelock();
+      } catch {
+        // The job may be unavailable in this WhatsApp Web build.
+      }
+      try {
+        return (
+          window
+            .require('WAWebUserPrefsIndexedDBStorage')
+            .userPrefsIdb.get('WAReachoutTimelockState') ?? null
+        );
+      } catch {
+        return undefined;
+      }
+    });
+  }
+
+  async fetchMessageCapping(): Promise<any> {
+    return this.pupPage.evaluate(async () => {
+      try {
+        return await window
+          .require('WAWebMexFetchNewChatMessageCappingInfoJob')
+          .mexFetchNewChatMessageCapping();
+      } catch {
+        try {
+          return (
+            window
+              .require('WAWebIndividualNewChatMessageCappingLimitUtils')
+              .getCappingData() ?? null
+          );
+        } catch {
+          return null;
+        }
+      }
+    });
+  }
+
+  private watchAccountState() {
+    if (this.accountStateInterval) {
+      clearInterval(this.accountStateInterval);
+    }
+    this.lastReachoutTimelock = null;
+    this.lastMessageCapping = null;
+    const page = this.pupPage;
+    this.accountStatePage = page;
+    const notify = async () => {
+      try {
+        const state = await page.evaluate(() => {
+          let reachoutTimelock = null;
+          let messageCapping = null;
+          try {
+            reachoutTimelock =
+              window
+                .require('WAWebUserPrefsIndexedDBStorage')
+                .userPrefsIdb.get('WAReachoutTimelockState') ?? null;
+          } catch {
+            // The local state may not be available before login.
+          }
+          try {
+            messageCapping =
+              window
+                .require('WAWebIndividualNewChatMessageCappingLimitUtils')
+                .getCappingData() ?? null;
+          } catch {
+            // The module may not be loaded yet.
+          }
+          return {
+            reachoutTimelock: reachoutTimelock,
+            messageCapping: messageCapping,
+          };
+        });
+        if (this.accountStatePage !== page) return;
+        const timelock = JSON.stringify(state.reachoutTimelock);
+        if (timelock !== this.lastReachoutTimelock) {
+          this.lastReachoutTimelock = timelock;
+          this.emit(
+            WebjsExtraEvents.REACHOUT_TIMELOCK_UPDATE,
+            state.reachoutTimelock,
+          );
+        }
+        const capping = JSON.stringify(state.messageCapping);
+        if (capping !== this.lastMessageCapping) {
+          this.lastMessageCapping = capping;
+          this.emit(
+            WebjsExtraEvents.MESSAGE_CAPPING_UPDATE,
+            state.messageCapping,
+          );
+        }
+      } catch (error) {
+        this.logger.debug(
+          { error: error },
+          'Unable to read WEBJS account state',
+        );
+      }
+    };
+    this.accountStateNotify = notify;
+    void notify();
+    this.accountStateInterval = setInterval(() => void notify(), 60_000);
+    this.accountStateInterval.unref();
   }
 
   async createLabel(name: string, color: number): Promise<number> {

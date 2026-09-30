@@ -1233,6 +1233,11 @@ export class WhatsappSessionNoWebCore extends WhatsappSession {
 
   @Activity()
   async sendPoll(request: MessagePollRequest) {
+    if (request.poll.endTime != null) {
+      throw new NotImplementedByEngineError(
+        'Poll end times are only available with the WEBJS engine.',
+      );
+    }
     const requestPoll = request.poll;
     const poll = {
       name: requestPoll.name,

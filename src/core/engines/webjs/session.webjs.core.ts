@@ -1,4 +1,7 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { parseMessageCapping } from '@waha/core/abc/capping';
 import {
   getChannelInviteLink,
@@ -27,6 +30,7 @@ import {
 import {
   WebjsChannelMessage,
   WebjsClientCore,
+  WebjsExtraEvents,
 } from '@waha/core/engines/webjs/WebjsClientCore';
 import {
   CallErrorEvent,
@@ -604,7 +608,9 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
     const wid = clientInfo.wid;
     return {
       id: GetSerialized(wid),
-      lid: GetSerialized(clientInfo.lid),
+      lid: GetSerialized(
+        (clientInfo as typeof clientInfo & { lid?: string }).lid,
+      ),
       pushName: clientInfo?.pushname,
       reachoutTimelock: this.reachoutTimelock.value,
       messageCapping: this.messageCapping.value,
@@ -647,17 +653,23 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
   }
 
   protected listenConnectionEvents() {
-    this.whatsapp.on(Events.REACHOUT_TIMELOCK_UPDATE, (record: any) => {
-      this.updateReachoutTimelockFromRecord(record);
-    });
+    this.whatsapp.on(
+      WebjsExtraEvents.REACHOUT_TIMELOCK_UPDATE,
+      (record: any) => {
+        this.updateReachoutTimelockFromRecord(record);
+      },
+    );
 
-    this.whatsapp.on(Events.MESSAGE_CAPPING_UPDATE, (record: any) => {
-      // Unlike the timelock, a null record means "no local data yet", not "capping lifted"
-      if (!record) {
-        return;
-      }
-      this.messageCapping.update(parseMessageCapping(record));
-    });
+    this.whatsapp.on(
+      WebjsExtraEvents.MESSAGE_CAPPING_UPDATE,
+      (record: any) => {
+        // Unlike the timelock, a null record means "no local data yet", not "capping lifted"
+        if (!record) {
+          return;
+        }
+        this.messageCapping.update(parseMessageCapping(record));
+      },
+    );
 
     this.whatsapp.on(Events.READY, async () => {
       // Ask WhatsApp for the current message capping state, the same fetch the app runs on startup
@@ -792,6 +804,7 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
         wid:
           WAWebUserPrefsMeUser.getMaybeMePnUser() ||
           WAWebUserPrefsMeUser.getMaybeMeLidUser(),
+        lid: WAWebUserPrefsMeUser.getMaybeMeLidUser(),
       };
     });
     this.whatsapp.info = data as any;
@@ -1061,6 +1074,9 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
 
   @Activity()
   async sendPoll(request: MessagePollRequest) {
+    if (request.poll.endTime != null && request.poll.endTime <= Date.now()) {
+      throw new BadRequestException('poll.endTime must be in the future');
+    }
     const poll = new Poll(request.poll.name, request.poll.options, {
       allowMultipleAnswers: request.poll.multipleAnswers,
       messageSecret: undefined,
@@ -1070,6 +1086,24 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
       request.chatId,
       'sendPoll',
     );
+    if (request.poll.endTime != null) {
+      const enabled = await this.whatsapp.pupPage.evaluate((id) => {
+        try {
+          const wid = window.require('WAWebWidFactory').createWid(id);
+          return window
+            .require('WAWebPollsGatingUtils')
+            .isPollEndTimeSendingEnabled(wid);
+        } catch {
+          return false;
+        }
+      }, chatId);
+      if (!enabled) {
+        throw new BadRequestException(
+          'Poll end times are not enabled for this WhatsApp chat',
+        );
+      }
+      options.extra = { pollEndTime: request.poll.endTime };
+    }
     return this.whatsapp.sendMessage(chatId, poll, options);
   }
 
@@ -1579,12 +1613,12 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
   }
 
   protected toLabel(label: WEBJSLabel): Label {
-    const color = label.colorIndex;
+    const color = Label.fromHex(label.hexColor);
     return {
       id: label.id,
       name: label.name,
       color: color,
-      colorHex: Label.toHex(color),
+      colorHex: label.hexColor,
     };
   }
 
@@ -2476,7 +2510,10 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
       filter((ack) => !isJidGroup(ack.to) && !isJidStatusBroadcast(ack.to)),
       filter((ack) => this.jids.include(ack.to)),
     );
-    const tagReceiptNode$ = fromEvent(this.whatsapp, Events.TAG_RECEIPT);
+    const tagReceiptNode$ = fromEvent(
+      this.whatsapp,
+      WebjsExtraEvents.TAG_RECEIPT,
+    );
     const messageAckGroups$ = tagReceiptNode$.pipe(
       mergeMap((node) =>
         TagReceiptNodeToReceiptEvent(node as any, this.getSessionMeInfo()),

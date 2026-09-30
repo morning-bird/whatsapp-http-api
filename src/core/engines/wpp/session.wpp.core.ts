@@ -603,6 +603,11 @@ export class WhatsappSessionWPPCore extends WhatsappSession {
 
   @Activity()
   public async sendPoll(request: MessagePollRequest): Promise<WAMessage> {
+    if (request.poll.endTime != null) {
+      throw new NotImplementedByEngineError(
+        'Poll end times are only available with the WEBJS engine.',
+      );
+    }
     const quotedMessageId = this.getReplyToMessageId(request as any);
     const options: WppSendPollOptions = {
       selectableCount: request.poll.multipleAnswers

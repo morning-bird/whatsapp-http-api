@@ -1,8 +1,8 @@
 /**
  * Serialized-ID helpers for the WEBJS engine.
  *
- * COPIED from whatsapp-web.js `src/util/Serialized.js` (fork: ../whatsapp-web.js).
- * Keep this file in sync with that upstream version whenever it changes.
+ * Adapted from the former WEBJS fork's `src/util/Serialized.js`.
+ * Keep this helper aligned with WhatsApp Web's ID serialization format.
  *
  * WhatsApp Web renamed the `_serialized` property on its ID objects (Wid /
  * MsgKey) to a minified name (`$1`) in the 2026-07 update. Rather than depend on

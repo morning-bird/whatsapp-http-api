@@ -9,12 +9,15 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUrl,
+  Max,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -464,6 +467,17 @@ export class MessagePoll {
   @IsOptional()
   @IsBoolean()
   multipleAnswers = false;
+
+  @ApiProperty({
+    description: 'When the poll ends (Unix timestamp in milliseconds). Available only with WEBJS when WhatsApp enables poll end times for the chat.',
+    example: 1790900000000,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(Number.MAX_SAFE_INTEGER)
+  endTime?: number;
 }
 
 export class MessagePollRequest extends ChatRequest {
