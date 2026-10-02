@@ -28,47 +28,29 @@ jest.mock('puppeteer', () => ({
 }));
 
 describe('WEBJS poll endTime', () => {
-  const originalWindow = globalThis.window;
-
-  afterEach(() => {
-    (globalThis as any).window = originalWindow;
-  });
-
-  function createSession(enabled: boolean) {
+  function createSession(chatId = '123@c.us') {
     const session = Object.create(WhatsappSessionWebJSCore.prototype) as any;
     const sendMessage = jest.fn().mockResolvedValue({ id: 'sent' });
-    const evaluate = jest.fn(async (callback, chatId) => {
-      (globalThis as any).window = {
-        require: (module: string) => {
-          if (module === 'WAWebWidFactory') {
-            return { createWid: (id: string) => id };
-          }
-          if (module === 'WAWebPollsGatingUtils') {
-            return {
-              isPollEndTimeSendingEnabled: (id: string) =>
-                enabled && id === '123@c.us',
-            };
-          }
-          throw new Error(`Unknown module ${module}`);
-        },
-      };
-      return callback(chatId);
-    });
+    const evaluate = jest
+      .fn()
+      .mockRejectedValue(
+        new Error('Internal feature-support pre-check must not run'),
+      );
     session.whatsapp = {
       sendMessage: sendMessage,
       pupPage: { evaluate: evaluate },
     };
     session.hooks = {
       activity: { promise: jest.fn().mockResolvedValue(undefined) },
-      wid: { chat: { promise: jest.fn().mockResolvedValue('123@c.us') } },
+      wid: { chat: { promise: jest.fn().mockResolvedValue(chatId) } },
     };
     return { session: session, sendMessage: sendMessage, evaluate: evaluate };
   }
 
-  function request(endTime?: number): MessagePollRequest {
+  function request(endTime?: number, chatId = '123@c.us'): MessagePollRequest {
     return {
       session: 'default',
-      chatId: '123@c.us',
+      chatId: chatId,
       poll: {
         name: 'Question',
         options: ['Yes', 'No'],
@@ -79,7 +61,7 @@ describe('WEBJS poll endTime', () => {
   }
 
   it('sends a regular poll without checking the end-time feature', async () => {
-    const { session, sendMessage, evaluate } = createSession(false);
+    const { session, sendMessage, evaluate } = createSession();
 
     await session.sendPoll(request());
 
@@ -91,29 +73,59 @@ describe('WEBJS poll endTime', () => {
     );
   });
 
-  it('sends an enabled poll end time in milliseconds', async () => {
+  it('sends a group poll end time in milliseconds without a feature pre-check', async () => {
     const endTime = Date.now() + 3_600_000;
-    const { session, sendMessage } = createSession(true);
+    const { session, sendMessage, evaluate } = createSession('123@g.us');
 
-    await session.sendPoll(request(endTime));
+    await session.sendPoll(request(endTime, '123@g.us'));
 
+    expect(evaluate).not.toHaveBeenCalled();
     expect(sendMessage).toHaveBeenCalledWith(
-      '123@c.us',
+      '123@g.us',
       expect.objectContaining({ pollName: 'Question' }),
       expect.objectContaining({ extra: { pollEndTime: endTime } }),
     );
   });
 
-  it('rejects an unsupported or expired end time before sending', async () => {
-    const { session, sendMessage } = createSession(false);
+  it.each(['123@c.us', '123@lid', '123@newsletter', 'status@broadcast'])(
+    'rejects an end time for non-group destination %s before sending',
+    async (chatId) => {
+      const { session, sendMessage, evaluate } = createSession(chatId);
+
+      await expect(
+        session.sendPoll(request(Date.now() + 3_600_000, chatId)),
+      ).rejects.toThrow('poll.endTime is only allowed for group chats (@g.us)');
+      expect(sendMessage).not.toHaveBeenCalled();
+      expect(evaluate).not.toHaveBeenCalled();
+    },
+  );
+
+  it('validates the resolved destination before sending an end time', async () => {
+    const { session, sendMessage } = createSession('123@c.us');
 
     await expect(
-      session.sendPoll(request(Date.now() + 3_600_000)),
-    ).rejects.toThrow(BadRequestException);
+      session.sendPoll(request(Date.now() + 3_600_000, '123@g.us')),
+    ).rejects.toThrow('poll.endTime is only allowed for group chats (@g.us)');
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('rejects an expired end time for a group before sending', async () => {
+    const { session, sendMessage } = createSession('123@g.us');
+
     await expect(
-      session.sendPoll(request(Date.now() - 1)),
+      session.sendPoll(request(Date.now() - 1, '123@g.us')),
     ).rejects.toThrow(BadRequestException);
     expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('propagates the original sending error for a group poll with an end time', async () => {
+    const { session, sendMessage } = createSession('123@g.us');
+    const error = new Error('WhatsApp rejected the poll');
+    sendMessage.mockRejectedValue(error);
+
+    await expect(
+      session.sendPoll(request(Date.now() + 3_600_000, '123@g.us')),
+    ).rejects.toBe(error);
   });
 
   it('validates an optional millisecond timestamp in HTTP and MCP inputs', async () => {

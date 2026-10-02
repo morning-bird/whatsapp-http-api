@@ -9,7 +9,14 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiNotImplementedResponse,
+  ApiOperation,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { WAHAValidationPipe } from '@waha/nestjs/pipes/WAHAValidationPipe';
 import {
   GetChatMessagesFilter,
@@ -293,7 +300,59 @@ export class ChattingController {
   @Post('/sendPoll')
   @ApiOperation({
     summary: 'Send a poll with options',
-    description: 'You can use it as buttons or list replacement',
+    description: [
+      'You can use a poll as a buttons or list replacement.',
+      '',
+      '### Set a poll end time (WEBJS only)',
+      '- `poll.endTime` is an optional **Unix timestamp in milliseconds**, not seconds or a duration.',
+      '- It must be an integer in the future. In JavaScript, use `Date.now() + 60 * 60 * 1000` to end the poll one hour from now.',
+      '- Omit `endTime` to send a poll without a scheduled end time.',
+      '- `endTime` is accepted only for group chats (`chatId` ending in `@g.us`); other destinations return HTTP 400.',
+      '- WAHA attempts delivery without an internal feature-support pre-check and propagates sending errors. Successful delivery alone does not confirm the deadline was applied; verify it in WhatsApp.',
+      '- NOWEB, GOWS, and WPP return HTTP 501 when `endTime` is provided.',
+      '- This sets the deadline when creating the poll; it does not manually end or edit a previously sent poll.',
+      '',
+      'Select **Poll ending in one hour** below for an example. Its timestamp is generated when the API starts; replace it with a fresh future timestamp before executing it later.',
+    ].join('\n'),
+  })
+  @ApiBody({
+    type: MessagePollRequest,
+    examples: {
+      regular: {
+        summary: 'Poll without an end time',
+        value: {
+          session: 'default',
+          chatId: '11111111111@c.us',
+          poll: {
+            name: 'Which day works for you?',
+            options: ['Saturday', 'Sunday'],
+            multipleAnswers: false,
+          },
+        },
+      },
+      endTime: {
+        summary: 'Poll ending in one hour (WEBJS)',
+        description:
+          'Replace endTime with Date.now() + 3600000 (milliseconds). Do not use Math.floor(Date.now() / 1000).',
+        value: {
+          session: 'default',
+          chatId: '123456789012345678@g.us',
+          poll: {
+            name: 'Which day works for you?',
+            options: ['Saturday', 'Sunday'],
+            multipleAnswers: false,
+            endTime: Date.now() + 3_600_000,
+          },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Invalid poll data, endTime is not in the future, or endTime was provided for a non-group chat.',
+  })
+  @ApiNotImplementedResponse({
+    description: 'poll.endTime is only implemented by the WEBJS engine.',
   })
   @CheckPolicies(CanSession(Action.Send, FromBody('session')))
   @UsePipes(new WAHAValidationPipe())

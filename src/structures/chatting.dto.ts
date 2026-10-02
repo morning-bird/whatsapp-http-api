@@ -469,8 +469,13 @@ export class MessagePoll {
   multipleAnswers = false;
 
   @ApiProperty({
-    description: 'When the poll ends (Unix timestamp in milliseconds). Available only with WEBJS when WhatsApp enables poll end times for the chat.',
-    example: 1790900000000,
+    description:
+      'Optional deadline as a Unix timestamp in milliseconds (not seconds or a duration). Must be in the future; use Date.now() + 3600000 for one hour from now. WEBJS only, for group chats (@g.us). WAHA attempts delivery without a feature-support pre-check; verify the deadline in WhatsApp. Omit to send a poll without a scheduled deadline.',
+    example: Date.now() + 3_600_000,
+    type: 'integer',
+    format: 'int64',
+    minimum: 1,
+    maximum: Number.MAX_SAFE_INTEGER,
     required: false,
   })
   @IsOptional()

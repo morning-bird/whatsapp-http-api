@@ -225,7 +225,7 @@ export class SendTools extends McpController {
   @Tool('send-poll', {
     title: 'Send a poll',
     description:
-      'Send a poll message with options; WEBJS supports optional poll.endTime as a Unix timestamp in milliseconds when enabled for the chat.',
+      'Send a poll message with options; WEBJS accepts optional poll.endTime as a future Unix timestamp in milliseconds for group chats (@g.us). Sends without a feature-support pre-check; verify the deadline in WhatsApp.',
     inputSchema: SendPollInput,
     annotations: {
       readOnlyHint: false,

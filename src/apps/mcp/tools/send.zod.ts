@@ -44,7 +44,9 @@ export const SendPollInput = DtoToZod(MessagePollRequest).extend({
       .positive()
       .max(Number.MAX_SAFE_INTEGER)
       .optional()
-      .describe('Poll end time (Unix timestamp in milliseconds; WEBJS only)'),
+      .describe(
+        'Poll end time (future Unix timestamp in milliseconds; WEBJS only, group chats @g.us). Verify the deadline in WhatsApp after sending.',
+      ),
   }),
 });
 export const SendPollVoteInput = DtoToZod(MessagePollVoteRequest);
@@ -62,5 +64,8 @@ export const NewMessageIdInput = z.object({
 export const SendEventInput = DtoToZod(EventMessage).extend({
   session: z.string().describe('Session name'),
   chatId: z.string().describe('Chat ID (e.g. 11111@c.us)'),
-  reply_to: z.string().optional().describe('Message ID to reply to'),
+  reply_to: z
+    .string()
+    .optional()
+    .describe('Message ID to reply to'),
 });

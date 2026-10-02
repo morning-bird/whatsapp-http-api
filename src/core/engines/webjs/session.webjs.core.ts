@@ -1087,19 +1087,9 @@ export class WhatsappSessionWebJSCore extends WhatsappSession {
       'sendPoll',
     );
     if (request.poll.endTime != null) {
-      const enabled = await this.whatsapp.pupPage.evaluate((id) => {
-        try {
-          const wid = window.require('WAWebWidFactory').createWid(id);
-          return window
-            .require('WAWebPollsGatingUtils')
-            .isPollEndTimeSendingEnabled(wid);
-        } catch {
-          return false;
-        }
-      }, chatId);
-      if (!enabled) {
+      if (!isJidGroup(chatId)) {
         throw new BadRequestException(
-          'Poll end times are not enabled for this WhatsApp chat',
+          'poll.endTime is only allowed for group chats (@g.us)',
         );
       }
       options.extra = { pollEndTime: request.poll.endTime };
