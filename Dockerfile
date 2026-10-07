@@ -6,6 +6,13 @@ ARG GOLANG_IMAGE_TAG=1.24-bookworm
 #
 FROM node:${NODE_IMAGE_TAG} AS build
 ENV PUPPETEER_SKIP_DOWNLOAD=True
+ARG BUILD_NODE_HEAP_MB=2048
+ARG BUILD_WORKERS=2
+ENV NODE_OPTIONS="--max-old-space-size=${BUILD_NODE_HEAP_MB}" \
+    YARN_TASK_POOL_CONCURRENCY=${BUILD_WORKERS} \
+    YARN_NETWORK_CONCURRENCY=8 \
+    npm_config_jobs=${BUILD_WORKERS} \
+    MAKEFLAGS="-j${BUILD_WORKERS}"
 
 # git + build toolchain for git deps
 RUN apt-get update && \
@@ -20,11 +27,15 @@ COPY .yarnrc.yml .
 ENV YARN_CHECKSUM_BEHAVIOR=update
 
 RUN npm install -g corepack && corepack enable
+# Only install native packages for the image's target OS/CPU, not every platform.
+RUN yarn config set supportedArchitectures --json '{"os":["current"],"cpu":["current"],"libc":["current"]}'
 RUN yarn install
 
 # App
 WORKDIR /git
 ADD . /git
+# ADD restores the repository's .yarnrc.yml, so apply the target-only setting again.
+RUN yarn config set supportedArchitectures --json '{"os":["current"],"cpu":["current"],"libc":["current"]}'
 RUN yarn install
 RUN yarn build && find ./dist -name "*.d.ts" -delete
 
